@@ -1,0 +1,26 @@
+- name: Atualizar pacotes
+  dnf:
+    name: "*"
+    state: latest
+    update_cache: yes
+    lock_timeout: 60
+
+- name: Instalar pacotes essenciais
+  dnf:
+    name:
+      - curl
+      - git
+      - vim
+      - htop
+      - python3
+      - python3-pip
+      - net-tools
+      - bash-completion
+    state: present
+
+- name: Instalar biblioteca Docker para Ansible
+  pip:
+    name:
+      - docker
+      - docker-compose 
+    executable: pip3

@@ -1,0 +1,54 @@
+- name: Instalar dependências
+  dnf:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  loop: "{{ docker_dependencies }}"
+  tags: ['docker', 'dependencias']
+
+- name: Adicionar repositório oficial do Docker
+  command: >
+    dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+  args:
+    creates: /etc/yum.repos.d/docker-ce.repo
+  tags: ['docker', 'repositorio']
+
+- name: Instalar Docker Engine e Docker CLI
+  dnf:
+    name: "{{ docker_packages }}"
+    state: present
+    update_cache: yes
+  tags: ['docker', 'engine']
+
+- name: Adicionar usuário vagrant ao grupo docker
+  user:
+    name: vagrant
+    groups: docker
+    append: yes
+  tags: ['docker', 'usuario']
+
+- name: Ativar e iniciar o serviço Docker
+  systemd:
+    name: docker
+    enabled: yes
+    state: started
+  tags: ['docker', 'service']
+  notify: restart docker
+
+- name: Esperar o Docker estar acessível
+  wait_for:
+    path: /var/run/docker.sock
+    state: present
+    timeout: 20
+  tags: ['docker', 'espera']
+
+- name: Verificar versão do Docker Compose
+  command: docker compose version
+  register: compose_output
+  changed_when: false
+  tags: ['docker', 'versao']
+
+- name: Mostrar versão do Docker Compose instalada
+  debug:
+    var: compose_output.stdout
+  tags: ['docker', 'versao']

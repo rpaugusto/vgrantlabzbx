@@ -1,0 +1,94 @@
+#version: '3'
+
+services:
+  zabbix-mysql:
+    image: mysql:8.0 # Use the latest Mysql image
+    container_name: ${ZBX_MYSQL_SERVER} # Set the container name
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: ${TZ}
+    command: 
+      - --character-set-server=utf8mb4 
+      - --collation-server=utf8mb4_bin
+      - --log-bin-trust-function-creators=1
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-storage:/var/lib/mysql # Persist MySql data
+    #  - ./data/zabbix/mysql
+    networks:
+      - monitoring-net  # Assign the network
+    restart: unless-stopped
+
+  zabbix-server:
+    image: zabbix/zabbix-server-mysql:latest
+    container_name: ${ZBX_SERVER_HOST}  # Set the container name
+    restart: always
+    environment:
+      DB_SERVER_HOST: ${ZBX_MYSQL_SERVER}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      ZBX_ENABLE_JAVASCRIPT: 'true'
+      PHP_TZ: ${TZ}
+    depends_on:
+      - zabbix-mysql
+    ports:
+      - "10051:10051"
+    volumes:
+      - /usr/local/bin:/usr/local/bin:ro  # Mount the host Python directory in the container
+      - zabbix-storage:/var/lib/zabbix
+      - zabbix-externalscripts:/usr/lib/zabbix/externalscripts:ro
+    networks:
+      - monitoring-net  # Assign the network
+  
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-mysql:latest
+    container_name: ${ZBX_SERVER_WEB} # Set the container name
+    restart: always
+    environment:
+      ZBX_SERVER_HOST: ${ZBX_SERVER_HOST}
+      ZBX_SERVER_PORT: 10051
+      ZBX_SERVER_NAME: ZabbixLab
+      DB_SERVER_HOST: ${ZBX_MYSQL_SERVER}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      PHP_TZ: ${TZ}
+    depends_on:
+      - zabbix-mysql
+      - zabbix-server
+    ports:
+      - "80:8080"
+      - "443:8443"
+    volumes:
+      - ./data/zabbix/web/nginx_status.conf:/etc/nginx/conf.d/nginx_status.conf:ro
+    networks:
+      - monitoring-net  # Assign the network
+
+  zabbix-agent2:
+    image: zabbix/zabbix-agent2:alpine-6.4-latest
+    container_name: ${ZBX_SERVER_AGENT} # Set the container name
+    environment:
+      ZBX_HOSTNAME: "container_agent"
+      ZBX_SERVER_HOST: ${ZBX_SERVER_HOST}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - monitoring-net  # Assign the network
+
+volumes:
+  mysql-storage:
+  zabbix-storage:
+  zabbix-externalscripts:
+
+networks:
+  monitoring-net:
+    driver: bridge

@@ -1,0 +1,10 @@
+- name: Subir container Grafana com Docker Compose
+  command: docker compose up -d
+  args:
+    chdir: "{{ playbook_dir }}/../stacks/grafana"
+
+- name: Aguarda Grafana iniciar
+  wait_for:
+    port: 3000
+    host: "localhost"
+    timeout: 60

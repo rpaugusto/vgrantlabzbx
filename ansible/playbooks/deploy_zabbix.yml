@@ -1,0 +1,13 @@
+- name: Provisionar stack de monitoramento
+  hosts: all
+  become: yes
+
+  #vars_files:
+  #  - ../roles/zabbix/files/vars.yml
+
+  vars:
+    stack_base_dir: "/vagrant/stacks"
+    
+  roles:
+    - zabbix
+    - grafana

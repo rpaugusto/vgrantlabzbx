@@ -1,0 +1,26 @@
+#version: '3.9'
+
+services:
+  grafana:
+    image: grafana/grafana-oss
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=grafana
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+      - GF_INSTALL_PLUGINS=alexanderzobnin-zabbix-datasource
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      #- ./provisioning:/etc/grafana/provisioning
+    networks:
+      - monitoring-net
+    restart: unless-stopped
+
+volumes:
+  grafana-storage:
+
+networks:
+  monitoring-net:
+    external: true
+    name: zabbix_monitoring-net

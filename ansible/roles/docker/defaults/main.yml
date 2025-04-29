@@ -1,0 +1,15 @@
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+docker_dependencies:
+  - dnf-plugins-core
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+
+docker_network_name: "monitoring-net"

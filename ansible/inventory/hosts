@@ -1,0 +1,8 @@
+[default]
+labstackrock ansible_connection=local
+
+[zabbix]
+labstackrock ansible_connection=local
+
+[grafana]
+labstackrock ansible_connection=local
