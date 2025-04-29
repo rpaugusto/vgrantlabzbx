@@ -11,5 +11,3 @@ docker_dependencies:
   - curl
   - gnupg
   - lsb-release
-
-docker_network_name: "monitoring-net"

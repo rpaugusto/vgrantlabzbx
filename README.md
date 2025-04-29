@@ -15,16 +15,33 @@ Este projeto demonstra a orquestração completa de uma stack de monitoramento u
 ```
 lab_rocklinux/
 ├── Vagrantfile
-├── ansible/
+├───ansible
 │   ├── ansible.cfg   
 │   ├── inventory/hosts
-│   ├── playbooks
-│   └── roles/
-│       ├── grafana/
-│       │   └── tasks/main.yml
-│       └── zabbix/
-│           └── tasks/main.yml
-├── docker/
-│   ├── grafana/docker-compose.yml
-│   └── zabbix/docker-compose.yml
+│   ├───playbooks
+│   ├───roles
+│   │   ├───common
+│   │   │   └───tasks/main.yml
+│   │   ├───docker
+│   │   │   ├───defaults
+│   │   │   ├───handlers
+│   │   │   ├───tasks/main.yml
+│   │   │   └───vars
+│   │   ├───grafana
+│   │   │   ├───files
+│   │   │   │   └───provisioning
+│   │   │   └───tasks/main.yml
+│   │   └───zabbix
+│   │       └───tasks/main.yml
+│   └───vars
+└───stacks
+    ├───grafana
+    │   └───provisioning
+    │       └───datasources
+    └───zabbix
+        └───data
+            ├───mysql
+            │   └───init
+            └───zabbix
+                └───web
 ```
