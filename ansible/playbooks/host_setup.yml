@@ -2,6 +2,9 @@
   hosts: all
   become: yes
 
+  vars:
+    ansible_roles_path: "/vagrant/ansible/roles"
+
   roles:
     - common
     - docker

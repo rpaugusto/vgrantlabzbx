@@ -6,3 +6,6 @@ labstackrock ansible_connection=local
 
 [grafana]
 labstackrock ansible_connection=local
+
+[monitoring]
+labstackrock ansible_connection=local

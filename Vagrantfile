@@ -14,6 +14,11 @@ Vagrant.configure("2") do |config|
     vb.memory = "2048"  # Ajuste conforme necessário
     vb.cpus = 2
   end
+
+  config.vm.provision "shell", inline: <<-SHELL
+    echo "[INFO] Corrigindo permissões da pasta /vagrant/ansible"
+    chmod 755 /vagrant/ansible
+  SHELL
   
   config.vm.provision "ansible_local" do |ansible|
     ansible.provisioning_path = "/vagrant/ansible"
