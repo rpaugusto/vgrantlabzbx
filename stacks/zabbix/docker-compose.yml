@@ -18,7 +18,6 @@ services:
       - "3306:3306"
     volumes:
       - mysql-storage:/var/lib/mysql # Persist MySql data
-    #  - ./data/zabbix/mysql
     networks:
       - monitoring-net  # Assign the network
     restart: unless-stopped
@@ -91,4 +90,5 @@ volumes:
 
 networks:
   monitoring-net:
-    driver: bridge
+    external: true
+    name: zabbix_monitoring-net

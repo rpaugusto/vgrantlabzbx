@@ -1,10 +1,16 @@
-- name: Subir container Grafana com Docker Compose
+- name: Criar diretório de destino para stack do Grafana
+  file:
+    path: /opt/grafana
+    state: directory
+    mode: '0755'
+
+- name: Copiar stack do Grafana para /opt/grafana
+  copy:
+    src: /vagrant/stacks/grafana/
+    dest: /opt/grafana/
+    remote_src: yes
+
+- name: Subir containers Grafana e Tempo
   command: docker compose up -d
   args:
-    chdir: "{{ playbook_dir }}/../stacks/grafana"
-
-- name: Aguarda Grafana iniciar
-  wait_for:
-    port: 3000
-    host: "localhost"
-    timeout: 60
+    chdir: /opt/grafana/

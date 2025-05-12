@@ -14,16 +14,9 @@ Vagrant.configure("2") do |config|
     vb.memory = "2048"  # Ajuste conforme necessário
     vb.cpus = 2
   end
-
-  config.vm.provision "shell", inline: <<-SHELL
-    echo "[INFO] Corrigindo permissões da pasta /vagrant/ansible"
-    chmod 755 /vagrant/ansible
-  SHELL
-  
+    
   config.vm.provision "ansible_local" do |ansible|
-    ansible.provisioning_path = "/vagrant/ansible"
-    ansible.playbook = "playbooks/host_setup.yml"  # Playbook do Ansible
-    ansible.inventory_path = "inventory/hosts"
+    ansible.playbook = "/vagrant/ansible/host_setup.yml"  # Playbook do Ansible
   end
   
   #config.vm.synced_folder ".", "/vagrant", type: "rsync"

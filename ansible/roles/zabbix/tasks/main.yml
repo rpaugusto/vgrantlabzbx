@@ -1,18 +1,16 @@
-- name: Criar diretório /opt/zabbix/web
+- name: Criar diretório de destino para stack do Zabbix
   file:
-    path: /opt/zabbix/web
+    path: /opt/zabbix
     state: directory
-    owner: vagrant
-    group: vagrant
     mode: '0755'
 
-- name: Subir stack Zabbix com Docker Compose
+- name: Copiar stack do Zabbix para /opt/
+  copy:
+    src: /vagrant/stacks/zabbix/
+    dest: /opt/zabbix/
+    remote_src: yes
+
+- name: Subir containers Zabbix
   command: docker compose up -d
   args:
-    chdir: "{{ stack_base_dir }}/zabbix"
-
-- name: Aguardar Zabbix iniciar
-  wait_for:
-    port: 8080
-    host: "localhost"
-    timeout: 60
+    chdir: /opt/zabbix/    

@@ -1,18 +1,18 @@
-#version: '3.9'
+#version: '3'
 
 services:
   grafana:
-    image: grafana/grafana-oss
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: grafana
     environment:
       - GF_SECURITY_ADMIN_USER=grafana
       - GF_SECURITY_ADMIN_PASSWORD=grafana
-      - GF_INSTALL_PLUGINS=alexanderzobnin-zabbix-datasource
     ports:
       - "3000:3000"
     volumes:
       - grafana-storage:/var/lib/grafana
-      #- ./provisioning:/etc/grafana/provisioning
     networks:
       - monitoring-net
     restart: unless-stopped
