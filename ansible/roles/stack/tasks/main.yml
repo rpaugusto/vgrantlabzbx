@@ -1,0 +1,16 @@
+- name: Criar diretório de destino para stack do Zabbix
+  file:
+    path: /opt/stack
+    state: directory
+    mode: '0755'
+
+- name: Copiar Configurações Contaniers para /opt/stack 
+  copy:
+    src: /vagrant/stack/
+    dest: /opt/stack/
+    remote_src: yes
+
+- name: Subir containers Zabbix + MySQL + Grafana 
+  command: docker compose up -d
+  args:
+    chdir: /opt/stack    

@@ -8,6 +8,4 @@
   roles:
     - common
     - docker
-    - network
-    - zabbix
-    - grafana
+    - stack
