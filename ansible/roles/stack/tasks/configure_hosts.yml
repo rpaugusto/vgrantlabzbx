@@ -1,0 +1,153 @@
+- name: Verificar se API do Zabbix está acessível
+  uri:
+    url: "http://localhost:80/api_jsonrpc.php"
+    method: POST
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body: |
+      {
+        "jsonrpc": "2.0",
+        "method": "apiinfo.version",
+        "params": {},
+        "id": 1,
+        "auth": null
+      }
+    status_code: 200
+  register: zabbix_api_status
+  retries: 15
+  delay: 10
+  until: zabbix_api_status.json.result is defined
+
+- name: Obter token de autenticação da API Zabbix
+  uri:
+    url: "{{ zabbix_url }}/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: "application/json"
+    body:
+      jsonrpc: "2.0"
+      method: "user.login"
+      params:
+        user: "{{ zabbix_username }}"
+        password: "{{ zabbix_password }}"
+      id: 1
+    return_content: yes
+  register: login_response
+  delegate_to: localhost
+
+- set_fact:
+    zabbix_auth_token: "{{ login_response.json.result }}"
+
+# Atualizar interface do Zabbix server (IP -> DNS)
+- name: Buscar host "Zabbix server"
+  uri:
+    url: "{{ zabbix_url }}/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: "application/json"
+    body:
+      jsonrpc: "2.0"
+      method: "host.get"
+      params:
+        filter:
+          host: ["Zabbix server"]
+        output: ["hostid"]
+        selectInterfaces: ["interfaceid"]
+      auth: "{{ zabbix_auth_token }}"
+      id: 2
+    return_content: yes
+  register: host_zabbix_response
+  delegate_to: localhost
+
+- name: Atualizar interface do host "Zabbix server"
+  uri:
+    url: "{{ zabbix_url }}/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: "application/json"
+    body:
+      jsonrpc: "2.0"
+      method: "hostinterface.update"
+      params:
+        interfaceid: "{{ host_zabbix_response.json.result[0].interfaces[0].interfaceid }}"
+        useip: 0
+        dns: "zabbix-agent2"
+        ip: ""
+        port: "10050"
+      auth: "{{ zabbix_auth_token }}"
+      id: 3
+    return_content: yes
+  when: host_zabbix_response.json.result | length > 0
+  delegate_to: localhost
+
+# Criar host docker-agent com template Docker
+- name: Verificar se host docker-agent existe
+  uri:
+    url: "{{ zabbix_url }}/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: "application/json"
+    body:
+      jsonrpc: "2.0"
+      method: "host.get"
+      params:
+        filter:
+          host: ["docker-agent"]
+      auth: "{{ zabbix_auth_token }}"
+      id: 4
+    return_content: yes
+  register: docker_host_response
+  delegate_to: localhost
+
+- name: Obter ID do template Docker
+  uri:
+    url: "{{ zabbix_url }}/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: "application/json"
+    body:
+      jsonrpc: "2.0"
+      method: "template.get"
+      params:
+        filter:
+          host: ["Template App Docker by Zabbix agent"]
+        output: ["templateid"]
+      auth: "{{ zabbix_auth_token }}"
+      id: 5
+    return_content: yes
+  register: template_docker_response
+  delegate_to: localhost
+
+- name: Criar host docker-agent
+  uri:
+    url: "{{ zabbix_url }}/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: "application/json"
+    body:
+      jsonrpc: "2.0"
+      method: "host.create"
+      params:
+        host: "docker-agent"
+        interfaces:
+          - type: 1
+            main: 1
+            useip: 0
+            dns: "zabbix-agent2"
+            ip: ""
+            port: "10050"
+        groups:
+          - groupid: "2"  # Geralmente 'Linux servers', confirme no seu Zabbix
+        templates:
+          - templateid: "{{ template_docker_response.json.result[0].templateid }}"
+      auth: "{{ zabbix_auth_token }}"
+      id: 6
+    when: docker_host_response.json.result | length == 0
+    delegate_to: localhost

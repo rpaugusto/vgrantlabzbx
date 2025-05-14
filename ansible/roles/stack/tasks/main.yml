@@ -6,11 +6,14 @@
 
 - name: Copiar Configurações Contaniers para /opt/stack 
   copy:
-    src: /vagrant/stack/
+    src: /vagrant/stacks/
     dest: /opt/stack/
     remote_src: yes
 
 - name: Subir containers Zabbix + MySQL + Grafana 
   command: docker compose up -d
   args:
-    chdir: /opt/stack    
+    chdir: /opt/stack
+
+#- name: Configurar hosts no Zabbix
+#  import_tasks: configure_hosts.yml

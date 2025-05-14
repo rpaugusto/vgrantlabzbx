@@ -5,7 +5,7 @@ services:
   grafana:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: grafana/Dockerfile
     container_name: grafana
     environment:
       - GF_SECURITY_ADMIN_USER=grafana
@@ -21,7 +21,7 @@ services:
   ## ZABBIX ##
   zabbix-mysql:
     image: mysql:8.0 # Use the latest Mysql image
-    container_name: ${ZBX_MYSQL_SERVER} # Set the container name
+    container_name: ${ZBX_MYSQL} # Set the container name
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -42,10 +42,10 @@ services:
 
   zabbix-server:
     image: zabbix/zabbix-server-mysql:latest
-    container_name: ${ZBX_SERVER_HOST}  # Set the container name
+    container_name: ${ZBX_SERVER}  # Set the container name
     restart: always
     environment:
-      DB_SERVER_HOST: ${ZBX_MYSQL_SERVER}
+      DB_SERVER_HOST: ${ZBX_MYSQL}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
@@ -53,7 +53,7 @@ services:
       ZBX_ENABLE_JAVASCRIPT: 'true'
       PHP_TZ: ${TZ}
     depends_on:
-      - ${ZBX_MYSQL_SERVER}
+      - ${ZBX_MYSQL}
     ports:
       - "10051:10051"
     volumes:
@@ -68,18 +68,18 @@ services:
     container_name: ${ZBX_SERVER_WEB} # Set the container name
     restart: always
     environment:
-      ZBX_SERVER_HOST: ${ZBX_SERVER_HOST}
+      ZBX_SERVER_HOST: ${ZBX_SERVER}
       ZBX_SERVER_PORT: 10051
       ZBX_SERVER_NAME: ZabbixLab
-      DB_SERVER_HOST: ${ZBX_MYSQL_SERVER}
+      DB_SERVER_HOST: ${ZBX_MYSQL}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       PHP_TZ: ${TZ}
     depends_on:
-      - ${ZBX_MYSQL_SERVER}
-      - ${ZBX_SERVER_HOST}
+      - ${ZBX_MYSQL}
+      - ${ZBX_SERVER}
     ports:
       - "80:8080"
       - "443:8443"
@@ -87,13 +87,14 @@ services:
       - ./data/zabbix/web/nginx_status.conf:/etc/nginx/conf.d/nginx_status.conf:ro
     networks:
       - monitoring-net  # Assign the network
-
+  
   zabbix-agent2:
     image: zabbix/zabbix-agent2:alpine-6.4-latest
     container_name: ${ZBX_SERVER_AGENT} # Set the container name
     environment:
       ZBX_HOSTNAME: ${ZBX_SERVER_AGENT}
       ZBX_SERVER_HOST: ${ZBX_SERVER_HOST}
+    user: root
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
@@ -110,7 +111,3 @@ volumes:
 networks:
   monitoring-net:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.25.0.0/28
-          gateway: 172.25.0.1

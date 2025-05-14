@@ -33,7 +33,6 @@
     enabled: yes
     state: started
   tags: ['docker', 'service']
-  notify: restart docker
 
 - name: Esperar o Docker estar acessível
   wait_for:
