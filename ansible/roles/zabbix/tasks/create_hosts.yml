@@ -1,0 +1,46 @@
+- name: Login to Zabbix API
+  uri:
+    url: "{{ zabbix_api_url }}"
+    method: POST
+    body_format: json
+    return_content: yes
+    body:
+      jsonrpc: "2.0"
+      method: "user.login"
+      params:
+        user: "{{ zabbix_api_user }}"
+        password: "{{ zabbix_api_pass }}"
+      id: 1
+  register: login_response
+
+- name: Set auth token
+  set_fact:
+    zabbix_auth: "{{ login_response.json.result }}"
+
+- name: Create hosts
+  loop: "{{ zabbix_hosts }}"
+  vars:
+    host_data: "{{ item }}"
+  uri:
+    url: "{{ zabbix_api_url }}"
+    method: POST
+    body_format: json
+    return_content: yes
+    body:
+      jsonrpc: "2.0"
+      method: "host.create"
+      params:
+        host: "{{ host_data.host }}"
+        interfaces:
+          - type: 1
+            main: 1
+            useip: 1
+            ip: "{{ host_data.ip }}"
+            dns: ""
+            port: "10050"
+        groups: "{{ host_data.groups | map('community_group', zabbix_auth) | list }}"
+        templates: "{{ host_data.templates | map('community_template', zabbix_auth) | list }}"
+      auth: "{{ zabbix_auth }}"
+      id: 1
+  register: create_host_response
+  failed_when: create_host_response.json.error is defined

@@ -1,0 +1,8 @@
+- name: Criar grupos de hosts
+  include_tasks: create_hostgroups.yml
+
+- name: Importar templates customizados
+  include_tasks: import_templates.yml
+
+- name: Criar hosts monitorados
+  include_tasks: create_hosts.yml

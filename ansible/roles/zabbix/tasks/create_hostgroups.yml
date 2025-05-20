@@ -1,0 +1,57 @@
+- name: Login to Zabbix API
+  uri:
+    url: "{{ zabbix_api_url }}"
+    method: POST
+    body_format: json
+    return_content: yes
+    body:
+      jsonrpc: "2.0"
+      method: "user.login"
+      params:
+        user: "{{ zabbix_api_user }}"
+        password: "{{ zabbix_api_pass }}"
+      id: 1
+  register: login_response
+
+- name: Set auth token
+  set_fact:
+    zabbix_auth: "{{ login_response.json.result }}"
+
+- name: Ensure host group exists
+  uri:
+    url: "{{ zabbix_api_url }}"
+    method: POST
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "hostgroup.get"
+      params:
+        filter:
+          name: "{{ item }}"
+      auth: "{{ zabbix_auth }}"
+      id: 1
+  register: hostgroup_check
+  loop: "{{ zabbix_hostgroups }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Create missing host group
+  uri:
+    url: "{{ zabbix_api_url }}"
+    method: POST
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "hostgroup.create"
+      params:
+        name: "{{ item }}"
+      auth: "{{ zabbix_auth }}"
+      id: 1
+  when: hostgroup_check.results[loop.index0].json.result | length == 0
+  loop: "{{ zabbix_hostgroups }}"
+  loop_control:
+    label: "{{ item }}"

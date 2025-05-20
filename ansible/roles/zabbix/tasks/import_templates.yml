@@ -1,0 +1,57 @@
+- name: Login to Zabbix API
+  uri:
+    url: "{{ zabbix_api_url }}"
+    method: POST
+    body_format: json
+    return_content: yes
+    body:
+      jsonrpc: "2.0"
+      method: "user.login"
+      params:
+        user: "{{ zabbix_api_user }}"
+        password: "{{ zabbix_api_pass }}"
+      id: 1
+  register: login_response
+
+- name: Set auth token
+  set_fact:
+    zabbix_auth: "{{ login_response.json.result }}"
+
+- name: Check if custom template exists
+  uri:
+    url: "{{ zabbix_api_url }}"
+    method: POST
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "template.get"
+      params:
+        filter:
+          host: [ "{{ custom_template_name }}" ]
+        output: "templateid"
+      auth: "{{ zabbix_auth }}"
+      id: 2
+  register: template_check
+
+- name: Import custom template if not exists
+  uri:
+    url: "{{ zabbix_api_url }}"
+    method: POST
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "configuration.import"
+      params:
+        format: "xml"
+        rules:
+          templates:
+            createMissing: true
+            updateExisting: true
+        source: "{{ lookup('file', custom_template_file) }}"
+      auth: "{{ zabbix_auth }}"
+      id: 3
+  when: template_check.json.result | length == 0
