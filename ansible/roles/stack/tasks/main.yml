@@ -10,7 +10,7 @@
     dest: /opt/stack/
     remote_src: yes
 
-- name: Subir containers Zabbix + MySQL + Grafana 
+- name: Subir containers Zabbix + MySQL + Grafana + GLPi
   command: docker compose up -d
   args:
     chdir: /opt/stack

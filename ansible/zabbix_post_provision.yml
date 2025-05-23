@@ -2,6 +2,6 @@
   hosts: localhost
   gather_facts: false
   vars_files:
-    - ../vars/zabbix_config.yml
+    - ../vars/zabbix.yml
   roles:
-    - zabbix_config
+    - zabbix

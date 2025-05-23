@@ -21,12 +21,12 @@ services:
   ## ZABBIX ##
   zabbix-mysql:
     image: mysql:8.0 # Use the latest Mysql image
-    container_name: ${ZBX_MYSQL} # Set the container name
+    container_name: ${ZABBIX_MYSQL} # Set the container name
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${ZABBIX_DB_NAME}
+      MYSQL_USER: ${ZABBIX_DB_USER}
+      MYSQL_PASSWORD: ${ZABBIX_DB_PASSWORD}
       TZ: ${TZ}
     command: 
       - --character-set-server=utf8mb4 
@@ -36,7 +36,6 @@ services:
       - "3306:3306"
     volumes:
       - mysql-storage:/var/lib/mysql # Persist MySql data
-      - ./stack/zabbix/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - monitoring-net  # Assign the network
     restart: unless-stopped
@@ -46,15 +45,15 @@ services:
     container_name: ${ZBX_SERVER}  # Set the container name
     restart: unless-stopped
     environment:
-      DB_SERVER_HOST: ${ZBX_MYSQL}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      DB_SERVER_HOST: ${ZABBIX_MYSQL}
+      MYSQL_DATABASE: ${ZABBIX_DB_NAME}
+      MYSQL_USER: ${ZABBIX_DB_USER}
+      MYSQL_PASSWORD: ${ZABBIX_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
       ZBX_ENABLE_JAVASCRIPT: 'true'
       PHP_TZ: ${TZ}
     depends_on:
-      - ${ZBX_MYSQL}
+      - ${ZABBIX_MYSQL}
     ports:
       - "10051:10051"
     volumes:
@@ -105,11 +104,54 @@ services:
     networks:
       - monitoring-net  # Assign the network
 
+  glpi:
+    image: diouxx/glpi
+    container_name: ${GLPI_CONTAINER}
+    environment:
+      TIMEZONE : ${TZ}
+      GLPI_DB_HOST : ${GLPI_MYSQL}
+      GLPI_DB_USER : ${GLPI_DB_USER}
+      GLPI_DB_PASSWORD : ${GLPI_DB_PASSWORD}
+      GLPI_DB_NAME : ${GLPI_DB_NAME}
+    ports:
+      - "8081:80"
+    volumes:
+      - glpi-storage:/var/www/html
+      - ./stack/glpi/apache_status.conf:/etc/apache2/conf-enabled/status.conf:ro
+    depends_on:
+      - ${ZBX_MYSQL}
+    networks:
+      - monitoring-net
+    restart: unless-stopped
+
+  glpi-mysql:
+    image: mysql:8.0 # Use the latest Mysql image
+    container_name: ${GLPI_MYSQL} # Set the container name
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${GLPI_DB_NAME}
+      MYSQL_USER: ${GLPI_DB_USER}
+      MYSQL_PASSWORD: ${GLPI_DB_PASSWORD}
+      TZ: ${TZ}
+    command: 
+      - --character-set-server=utf8mb4 
+      - --collation-server=utf8mb4_bin
+      - --log-bin-trust-function-creators=1
+    ports:
+      - "3307:3306"
+    volumes:
+      - glpi-mysql-storage:/var/lib/mysql # Persist MySql data
+    networks:
+      - monitoring-net  # Assign the network
+    restart: unless-stopped
+
 volumes:
-  mysql-storage:
+  zabbix-mysql-storage:
   zabbix-storage:
   zabbix-externalscripts:
   grafana-storage:
+  glpi-storage:
+  glpi-mysql-storage:
 
 networks:
   monitoring-net:
