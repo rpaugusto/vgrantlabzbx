@@ -1,11 +1,19 @@
 apiVersion: 1
 
 datasources:
-  - name: MySQL
+  - name: MySQL-Zabbix
     type: mysql
     url: zabbix-mysql:3306
     access: proxy
     database: zbxlabdb
     user: zabbix
+    secureJsonData:
+      password: 'P@ssw0rd#001'
+  - name: MySQL-Glpi
+    type: mysql
+    url: glpi-mysql:3306
+    access: proxy
+    database: glpilabdb
+    user: glpidbapp
     secureJsonData:
       password: 'P@ssw0rd#001'

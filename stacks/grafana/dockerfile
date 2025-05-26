@@ -4,7 +4,7 @@ FROM grafana/grafana:latest
 RUN grafana-cli plugins install alexanderzobnin-zabbix-app 
 
 # Tornar os plugins disponíveis no container
-ENV GF_INSTALL_PLUGINS="alexanderzobnin-zabbix-app"
+ENV GF_INSTALL_PLUGINS="alexanderzobnin-zabbix-app,grafana-clock-panel,gapit-htmlgraphics-panel"
 
 # Permite que o Grafana use os arquivos de provisionamento automaticamente
 COPY grafana/provisioning /etc/grafana/provisioning
