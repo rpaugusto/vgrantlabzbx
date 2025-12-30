@@ -20,8 +20,8 @@ services:
 
   ## ZABBIX ##
   zabbix-mysql:
-    image: mysql:8.0 # Use the latest Mysql image
-    container_name: ${ZABBIX_MYSQL} # Set the container name
+    image: mysql:8.0 
+    container_name: zabbix-mysql 
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${ZABBIX_DB_NAME}
@@ -35,17 +35,18 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - zabbix-mysql-storage:/var/lib/mysql # Persist MySql data
+      - zabbix-mysql-storage:/var/lib/mysql 
+      - ./zabbix/mysql/init/init.sql:/etc/mysql/init.sql:ro
     networks:
-      - monitoring-net  # Assign the network
+      - monitoring-net  
     restart: unless-stopped
 
   zabbix-server:
     image: zabbix/zabbix-server-mysql:latest
-    container_name: ${ZBX_SERVER}  # Set the container name
+    container_name: zabbix-server 
     restart: unless-stopped
     environment:
-      DB_SERVER_HOST: ${ZABBIX_MYSQL}
+      DB_SERVER_HOST: zabbix-mysql
       MYSQL_DATABASE: ${ZABBIX_DB_NAME}
       MYSQL_USER: ${ZABBIX_DB_USER}
       MYSQL_PASSWORD: ${ZABBIX_DB_PASSWORD}
@@ -53,48 +54,51 @@ services:
       ZBX_ENABLE_JAVASCRIPT: 'true'
       PHP_TZ: ${TZ}
     depends_on:
-      - ${ZABBIX_MYSQL}
+      - zabbix-mysql
     ports:
       - "10051:10051"
     volumes:
-      - /usr/local/bin:/usr/local/bin:ro  # Mount the host Python directory in the container
+      - /usr/local/bin:/usr/local/bin:ro 
       - zabbix-storage:/var/lib/zabbix
       - zabbix-externalscripts:/usr/lib/zabbix/externalscripts:ro
     networks:
-      - monitoring-net  # Assign the network
+      - monitoring-net 
   
   zabbix-web:
     image: zabbix/zabbix-web-nginx-mysql:latest
-    container_name: ${ZBX_WEB} # Set the container name
+    container_name: zabbix-web 
     restart: unless-stopped
     environment:
-      ZBX_SERVER_HOST: ${ZBX_SERVER}
+      ZBX_SERVER_HOST: zabbix-server
       ZBX_SERVER_PORT: 10051
       ZBX_SERVER_NAME: ZabbixLab
-      DB_SERVER_HOST: ${ZABBIX_MYSQL}
+      DB_SERVER_HOST: zabbix-mysql
       MYSQL_DATABASE: ${ZABBIX_DB_NAME}
       MYSQL_USER: ${ZABBIX_DB_USER}
       MYSQL_PASSWORD: ${ZABBIX_DB_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
       PHP_TZ: ${TZ}
     depends_on:
-      - ${ZABBIX_MYSQL}
-      - ${ZBX_SERVER}
+      - zabbix-mysql
+      - zabbix-server
     ports:
       - "80:8080"
       - "443:8443"
     volumes:
       - ./zabbix/web/nginx_status.conf:/etc/nginx/conf.d/nginx_status.conf:ro
+      - ./zabbix/web/extensions/myexample:/usr/share/zabbix/modules/myexample:rw
     networks:
-      - monitoring-net  # Assign the network
+      - monitoring-net
   
   zabbix-agent2:
     image: zabbix/zabbix-agent2:alpine-6.4-latest
-    container_name: ${ZBX_AGENT} # Set the container name
+    container_name: zabbix-agent2
     restart: unless-stopped
+    depends_on:
+      - zabbix-mysql
     environment:
-      ZBX_HOSTNAME: ${ZBX_AGENT}
-      ZBX_SERVER_HOST: ${ZBX_SERVER}
+      ZBX_HOSTNAME: zabbix-agent2
+      ZBX_SERVER_HOST: zabbix-server
     user: root
     privileged: true
     volumes:
@@ -104,60 +108,19 @@ services:
     networks:
       - monitoring-net  # Assign the network
 
-  glpi:
-    image: diouxx/glpi
-    container_name: ${GLPI_CONTAINER}
-    environment:
-      TIMEZONE : ${TZ}
-      GLPI_DB_HOST : ${GLPI_MYSQL}
-      GLPI_DB_USER : ${GLPI_DB_USER}
-      GLPI_DB_PASSWORD : ${GLPI_DB_PASSWORD}
-      GLPI_DB_NAME : ${GLPI_DB_NAME}
+  ## FLASK APPLICATION ##
+  flask-app:
+    build:
+      context: ./flask-app
+      dockerfile: Dockerfile
+    container_name: flask-app
     ports:
-      - "8081:80"
-    volumes:
-      - glpi-storage:/var/www/html
-      - ./glpi/apache_status.conf:/etc/apache2/conf-enabled/status.conf:ro
-    depends_on:
-      - ${GLPI_MYSQL}
+      - "${FLASK_PORT}:5000"
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=production
     networks:
       - monitoring-net
-    restart: unless-stopped
-
-  glpi-mysql:
-    image: mysql:8.0 # Use the latest Mysql image
-    container_name: ${GLPI_MYSQL} # Set the container name
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_DATABASE: ${GLPI_DB_NAME}
-      MYSQL_USER: ${GLPI_DB_USER}
-      MYSQL_PASSWORD: ${GLPI_DB_PASSWORD}
-      TZ: ${TZ}
-    command: 
-      - --character-set-server=utf8mb4 
-      - --collation-server=utf8mb4_bin
-      - --log-bin-trust-function-creators=1
-    ports:
-      - "3307:3306"
-    volumes:
-      - glpi-mysql-storage:/var/lib/mysql # Persist MySql data
-    networks:
-      - monitoring-net  # Assign the network
-    restart: unless-stopped
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus  # Set the container name
-    environment:
-      TZ: ${TZ}
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
-    networks:
-      - monitoring-net  # Assign the network
     restart: unless-stopped
 
 volumes:
@@ -165,9 +128,8 @@ volumes:
   zabbix-storage:
   zabbix-externalscripts:
   grafana-storage:
-  glpi-storage:
-  glpi-mysql-storage:
-
+  flask-data:
+  
 networks:
   monitoring-net:
     driver: bridge

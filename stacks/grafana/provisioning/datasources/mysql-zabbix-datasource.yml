@@ -9,11 +9,11 @@ datasources:
     user: zabbix
     secureJsonData:
       password: 'P@ssw0rd#001'
-  - name: MySQL-Glpi
-    type: mysql
-    url: glpi-mysql:3306
-    access: proxy
-    database: glpilabdb
-    user: glpidbapp
-    secureJsonData:
-      password: 'P@ssw0rd#001'
+  #- name: MySQL-Glpi
+  #  type: mysql
+  #  url: glpi-mysql:3306
+  #  access: proxy
+  #  database: glpilabdb
+  #  user: glpidbapp
+  #  secureJsonData:
+  #    password: 'P@ssw0rd#001'
